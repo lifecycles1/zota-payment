@@ -1,0 +1,12 @@
+version: "2"
+authtoken: 2B9rEUhmX5Iz1OTtFJmnBHSxhBD_4e5XqUkQhS4bM3QfzmVnX
+tunnels:
+  frontend:
+    addr: 5173
+    proto: http
+  backend:
+    addr: 8080
+    proto: http
+
+  #  in script of client package.json
+  #  && cd ../client && npm run dev
