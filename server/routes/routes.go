@@ -26,11 +26,5 @@ func SetupRoutes(depositController *controllers.DepositController, orderStatusCo
 	// frontend deposit flow (TEST Client Flow Button provided in frontend(TestFlows)) with redirects using frontend(PaymentReturn.jsx as redirectUrl) polling until final order status is received.
 	r.HandleFunc("/api/v1/deposit/client-flow/{endpointID}/", depositController.DepositRequestHandler).Methods("POST")
 
-	// backend deposit flow without redirects using backend polling for order status
-	// 1. can test individually
-	// 1.1 with postman
-	// 1.2 TEST Backend Flow Button provided in frontend(TestFlows) without redirects
-	r.HandleFunc("/api/v1/deposit/backend-flow/{endpointID}/", depositController.DepositFlowHandler).Methods("POST")
-
 	return r
 }

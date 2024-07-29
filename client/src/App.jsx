@@ -8,18 +8,16 @@ import NavBar from "./components/NavBar";
 
 function App() {
   return (
-    <>
+    <Router>
       <NavBar />
-      <Router>
-        <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/v1/test-endpoints" element={<TestEndpoints />} />
-          <Route path="/v1/flows" element={<TestFlows />} />
-          <Route path="/v1/account/deposit/:uid" element={<Profile />} />
-          <Route path="/v1/payment/return" element={<PaymentReturn />} />
-        </Routes>
-      </Router>
-    </>
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route path="/v1/test-endpoints" element={<TestEndpoints />} />
+        <Route path="/v1/flows" element={<TestFlows />} />
+        <Route path="/v1/account/deposit/:uid" element={<Profile />} />
+        <Route path="/v1/payment/return" element={<PaymentReturn />} />
+      </Routes>
+    </Router>
   );
 }
 

@@ -35,7 +35,7 @@ func (s *DepositService) CreateDepositRequest(endpointID string, request dto.Dep
 	body, err := json.Marshal(request)
 	if err != nil {
 		log.Printf("Error marshalling request: %v", err)
-		return nil, err
+		return nil, fmt.Errorf("error marshalling request: %w", err)
 	}
 
 	log.Printf("body: %s", body)
@@ -43,7 +43,7 @@ func (s *DepositService) CreateDepositRequest(endpointID string, request dto.Dep
 	req, err := http.NewRequest("POST", url, bytes.NewBuffer(body))
 	if err != nil {
 		log.Printf("Error creating request: %v", err)
-		return nil, err
+		return nil, fmt.Errorf("error creating request: %w", err)
 	}
 
 	req.Header.Set("Content-Type", "application/json")
@@ -51,7 +51,7 @@ func (s *DepositService) CreateDepositRequest(endpointID string, request dto.Dep
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		log.Printf("Error making request: %v", err)
-		return nil, err
+		return nil, fmt.Errorf("error making request: %w", err)
 	}
 
 	defer resp.Body.Close()
@@ -59,7 +59,7 @@ func (s *DepositService) CreateDepositRequest(endpointID string, request dto.Dep
 	var depositResponse dto.DepositResponse
 	if err := json.NewDecoder(resp.Body).Decode(&depositResponse); err != nil {
 		log.Printf("Error decoding response: %v", err)
-		return nil, err
+		return nil, fmt.Errorf("error decoding response: %w", err)
 	}
 
 	log.Printf("depositResponse: %+v", depositResponse)

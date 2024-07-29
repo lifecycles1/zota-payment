@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"time"
 	"zota_payment/dto"
 	"zota_payment/utils"
 )
@@ -39,14 +38,14 @@ func (s *OrderStatusService) GetOrderStatus(params dto.OrderStatusRequest) (*dto
 
 	resp, err := http.Get(url)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to make GET request to %s: %w", url, err)
 	}
 
 	defer resp.Body.Close()
 
 	var orderStatusResponse dto.OrderStatusResponse
 	if err := json.NewDecoder(resp.Body).Decode(&orderStatusResponse); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error decoding response: %w", err)
 	}
 
 	log.Printf("Order Status Response: %+v", orderStatusResponse)
@@ -57,38 +56,4 @@ func (s *OrderStatusService) GetOrderStatus(params dto.OrderStatusRequest) (*dto
 	}
 
 	return &orderStatusResponse, nil
-}
-
-// GET /api/v1/query/order-status/
-// Polls requests to GetOrderStatus until it reaches a final status
-func (s *OrderStatusService) PollOrderStatus(params dto.OrderStatusRequest) (*dto.OrderStatusResponse, error) {
-	for {
-		response, err := s.GetOrderStatus(params)
-		if err != nil {
-			if response != nil {
-				return response, err
-			}
-			return nil, err
-		}
-
-		if response.Data.Status == "" {
-			return nil, fmt.Errorf("unexpected response: %+v", response)
-		}
-
-		if isFinalStatus(response.Data.Status) {
-			return response, nil
-		}
-
-		time.Sleep(12 * time.Second)
-	}
-}
-
-func isFinalStatus(status dto.OrderStatusEnum) bool {
-	finalStatuses := []string{"FILTERED", "APPROVED", "DECLINED", "ERROR"}
-	for _, finalStatus := range finalStatuses {
-		if string(status) == finalStatus {
-			return true
-		}
-	}
-	return false
 }

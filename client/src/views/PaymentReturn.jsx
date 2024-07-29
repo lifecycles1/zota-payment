@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
 import backArrow from "../assets/back-arrow-svgrepo-com.svg";
+import { Link } from "react-router-dom";
 
 const PaymentReturn = () => {
   const [message, setMessage] = useState("");
@@ -65,19 +66,14 @@ const PaymentReturn = () => {
     };
 
     fetchOrderStatus();
-  }, [data.data?.status]);
+  }, [data?.data?.status]);
 
   return (
     <div className="payment-return container mx-auto p-4">
       <div className="flex justify-between items-center pb-5">
-        <button
-          onClick={() => {
-            localStorage.clear();
-            window.location.href = "/";
-          }}
-        >
+        <Link to="/" onClick={() => localStorage.clear()}>
           <img src={backArrow} alt="back arrow" className="w-8 h-8" />
-        </button>
+        </Link>
         <h1 className="text-2xl font-bold mb-4">Payment Status</h1>
         {message && <p className="text-red-500">{message}</p>}
       </div>
@@ -86,7 +82,7 @@ const PaymentReturn = () => {
           <div className="flex justify-between items-center">
             <h2 className="text-xl font-semibold mb-2">Order Status Response</h2>
             <p className="ml-2 text-sm text-gray-500">
-              <span className="bg-gray-200 p-1 rounded-md">{data.status}</span>Polling every 13 seconds until a final status is received
+              <span className="bg-gray-200 p-1 rounded-md">{data?.status}</span>Polling every 13 seconds until a final status is received
             </p>
           </div>
           <pre>

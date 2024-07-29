@@ -1,18 +1,19 @@
-import { useState } from "react";
-import { GenerateSignature } from "../utils/utils";
+import { useEffect, useState } from "react";
+import { GenerateRandomMerchantOrderID, GenerateSignature } from "../utils/utils";
 import axios from "axios";
 import backArrow from "../assets/back-arrow-svgrepo-com.svg";
+import { Link } from "react-router-dom";
 
 const TestFlows = () => {
-  const [merchantID, setMerchantID] = useState("BUGBOUNTY231");
+  const [merchantID, setMerchantID] = useState(import.meta.env.VITE_MERCHANT_ID);
   const [merchantSecretKey, setMerchantSecretKey] = useState(import.meta.env.VITE_MERCHANT_SECRET_KEY);
   const baseURL = "http://localhost:8080";
   const clientFlowEndpointURL = "/api/v1/deposit/client-flow/";
-  const backendFlowEndpointURL = "/api/v1/deposit/backend-flow/";
   const orderStatusReqEndpointURL = "/api/v1/query/order-status/";
-  const [endpointID, setEndpointID] = useState("402334");
+  const [endpointID, setEndpointID] = useState(import.meta.env.VITE_ENDPOINT_ID);
+  useEffect(() => setDepositReqPayload((prev) => ({ ...prev, merchantOrderID: GenerateRandomMerchantOrderID() })), []);
   const [depositReqPayload, setDepositReqPayload] = useState({
-    merchantOrderID: "QvE8dZshpKhaOmH7",
+    merchantOrderID: "",
     merchantOrderDesc: "Test order",
     orderAmount: "500",
     orderCurrency: "USD",
@@ -36,29 +37,6 @@ const TestFlows = () => {
   });
   // responses
   const [message, setMessage] = useState("");
-  const [orderStatusResp, setOrderStatusResp] = useState({
-    type: "",
-    status: "",
-    errorMessage: "",
-    endpointID: "",
-    processorTransactionID: "",
-    merchantOrderID: "",
-    orderID: "",
-    amount: "",
-    currency: "",
-    customerEmail: "",
-    customParam: "",
-    extraData: {
-      amountChanged: "",
-      amountRounded: "",
-      amountManipulated: "",
-      dcc: "",
-      originalAmount: "",
-      paymentMethod: "",
-      selectedBankCode: "",
-      selectedBankName: "",
-    },
-  });
 
   const handleInputChange = (e) => {
     setDepositReqPayload((prev) => ({ ...prev, [e.target.name]: e.target.value }));
@@ -68,12 +46,14 @@ const TestFlows = () => {
   const handleClientFlowWithRedirects = async () => {
     try {
       // call the deposit request endpoint
-      const data = await axios.post(`${baseURL}${clientFlowEndpointURL}${endpointID}/`, depositReqPayload);
+      const response = await axios.post(`${baseURL}${clientFlowEndpointURL}${endpointID}/`, depositReqPayload);
 
       // order status request happens in redirectURL (PaymentReturn.jsx)
       // frontend will poll requests and display/update results until a final status is received.
-      const merchantOrderID = data.data.merchantOrderID;
-      const orderID = data.data.orderID;
+      const merchantOrderID = response.data.data.merchantOrderID;
+      console.log("merchantOrderID:", merchantOrderID);
+      const orderID = response.data.data.orderID;
+      console.log("orderID:", orderID);
       const timestamp = Math.floor(Date.now() / 1000);
       // generate auth signature for order status request
       const orderStatusSignature = GenerateSignature(`${merchantID}${merchantOrderID}${orderID}${timestamp}${merchantSecretKey}`);
@@ -87,7 +67,7 @@ const TestFlows = () => {
       localStorage.setItem("baseURL", baseURL);
       localStorage.setItem("orderStatusReqEndpointURL", orderStatusReqEndpointURL);
       // redirect to zota deposit url to submit the payment (zota will then redirect to the redirectUrl)
-      window.location.href = data.data.depositUrl;
+      window.location.href = response.data.data.depositUrl;
     } catch (error) {
       if (error.response) {
         // server responded with a status other than 2xx
@@ -101,32 +81,23 @@ const TestFlows = () => {
     }
   };
 
-  // test backend flow endpoint which will issue a deposit request,
-  // backend will poll the order status until a final status is received, and return the response to the client whicl will update the UI
-  const handleBackendFlowWithoutRedirects = async () => {
-    try {
-      const data = await axios.post(`${baseURL}${backendFlowEndpointURL}${endpointID}/`, depositReqPayload);
+  const inputFields = Object.keys(depositReqPayload).map((key) => (
+    <div key={key} className="flex flex-col mb-2">
+      <label className="font-medium">{key}</label>
+      <input type="text" name={key} value={depositReqPayload[key]} onChange={handleInputChange} className="p-2 border rounded-md" />
+    </div>
+  ));
 
-      setOrderStatusResp(data.data);
-    } catch (error) {
-      if (error.response) {
-        // server responded with a status other than 2xx
-        console.error("Error response:", error.response.data);
-        setMessage(error.response.data.message);
-      } else {
-        // something else happened while setting up the request
-        console.error("Error:", error.message);
-        setMessage(`Error: ${error.message}`);
-      }
-    }
-  };
+  const halfLength = Math.ceil(inputFields.length / 2);
+  const leftFields = inputFields.slice(0, halfLength);
+  const rightFields = inputFields.slice(halfLength);
 
   return (
     <div className="flows-container mx-auto p-4">
       <div className="flex justify-between items-center pb-5">
-        <button onClick={() => (window.location.href = "/")}>
+        <Link to="/">
           <img src={backArrow} alt="back arrow" className="w-8 h-8" />
-        </button>
+        </Link>
         <h1 className="text-2xl font-bold mb-4">Test Flows</h1>
         <div className="flex space-x-10">
           <div className="flex flex-col">
@@ -143,35 +114,16 @@ const TestFlows = () => {
           </div>
         </div>
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 gap-6">
         <div className="p-4 border rounded-md shadow-md">
           <h2 className="text-xl font-semibold mb-2">Client Flow with Redirects</h2>
           <p className="mb-4">The user will be redirected to the deposit URL and then further to the redirect URL where the order status will be polled on the frontend until a final status is received.</p>
-          <div className="flex flex-col gap-2 mb-4">
-            {Object.keys(depositReqPayload).map((key) => (
-              <div key={key} className="flex flex-col">
-                <label className="font-medium">{key}</label>
-                <input type="text" name={key} value={depositReqPayload[key]} onChange={handleInputChange} className="p-2 border rounded-md" />
-              </div>
-            ))}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>{leftFields}</div>
+            <div>{rightFields}</div>
           </div>
           <button onClick={handleClientFlowWithRedirects} className="bg-blue-500 text-white py-2 px-4 rounded-md">
             Start Client Flow
-          </button>
-        </div>
-        <div className="p-4 border rounded-md shadow-md">
-          <h2 className="text-xl font-semibold mb-2">Backend Flow with final order status response displayed below</h2>
-          <p className="mb-4">The user will not be redirected. The process will happen entirely on the backend by issuing a deposit request and polling the order status until a final status is received, then returning the response and displaying it below.</p>
-          <div className="flex flex-col gap-2 mb-4">
-            {Object.keys(depositReqPayload).map((key) => (
-              <div key={key} className="flex flex-col">
-                <label className="font-medium">{key}</label>
-                <input type="text" name={key} value={depositReqPayload[key]} onChange={handleInputChange} className="p-2 border rounded-md" />
-              </div>
-            ))}
-          </div>
-          <button onClick={handleBackendFlowWithoutRedirects} className="bg-blue-500 text-white py-2 px-4 rounded-md">
-            Start Backend Flow
           </button>
         </div>
       </div>
@@ -179,14 +131,6 @@ const TestFlows = () => {
         <div className="mt-4 p-4 border rounded-md shadow-md">
           <h2 className="text-xl font-semibold">Message</h2>
           <p>{message}</p>
-        </div>
-      )}
-      {orderStatusResp && (
-        <div className="mt-4 p-4 border rounded-md shadow-md">
-          <h2 className="text-xl font-semibold">Final Order Status Response</h2>
-          <pre>
-            <code>{JSON.stringify(orderStatusResp, null, 2)}</code>
-          </pre>
         </div>
       )}
     </div>

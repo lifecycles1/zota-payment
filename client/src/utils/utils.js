@@ -9,3 +9,13 @@ export const GenerateSignature = async (data) => {
   const hashHex = hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
   return hashHex;
 };
+
+const characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+
+export const GenerateRandomMerchantOrderID = () => {
+  let result = "";
+  for (let i = 0; i < 16; i++) {
+    result += characters.charAt(Math.floor(Math.random() * characters.length));
+  }
+  return result;
+};
