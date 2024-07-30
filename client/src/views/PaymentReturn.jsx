@@ -2,9 +2,11 @@ import { useEffect, useState } from "react";
 import axios from "axios";
 import backArrow from "../assets/back-arrow-svgrepo-com.svg";
 import { Link } from "react-router-dom";
+import { GenerateSignature } from "../utils/utils";
 
 const PaymentReturn = () => {
-  const [message, setMessage] = useState("");
+  const baseURL = "http://localhost:8080";
+  const orderStatusReqEndpointURL = "/api/v1/query/order-status/";
   const [data, setData] = useState({
     type: "",
     status: "",
@@ -34,17 +36,29 @@ const PaymentReturn = () => {
       timestamp: "",
     },
   });
+  const [message, setMessage] = useState("");
 
   useEffect(() => {
-    console.log("running redirect url useeffect");
+    const urlParams = new URLSearchParams(window.location.search);
+    const status = urlParams.get("status");
+    const orderID = urlParams.get("orderID");
+    const merchantOrderID = urlParams.get("merchantOrderID");
+    const paramsSignature = urlParams.get("signature");
+
+    const generateSignature = async () => {
+      const signatureString = `${status}${orderID}${merchantOrderID}${import.meta.env.VITE_MERCHANT_SECRET_KEY}`;
+      const signature = await GenerateSignature(signatureString);
+      return signature;
+    };
+
     const fetchOrderStatus = async () => {
       try {
-        const queryString = `merchantID=${localStorage.getItem("merchantID")}&merchantOrderID=${localStorage.getItem("merchantOrderID")}&orderID=${localStorage.getItem("orderID")}&timestamp=${localStorage.getItem("timestamp")}&signature=${localStorage.getItem("signature")}`;
-        const response = await axios.get(`${localStorage.getItem("baseURL")}${localStorage.getItem("orderStatusReqEndpointURL")}?${queryString}`);
+        const queryString = `merchantID=${import.meta.env.VITE_MERCHANT_ID}&merchantOrderID=${merchantOrderID}&orderID=${orderID}&timestamp=${localStorage.getItem("timestamp")}&signature=${localStorage.getItem("signature")}`;
+        const response = await axios.get(`${baseURL}${orderStatusReqEndpointURL}?${queryString}`);
 
-        const data = response.data;
-        setMessage(data.message);
-        setData(data.data);
+        const data = response?.data;
+        setMessage(data?.message);
+        setData(data?.data);
 
         if (data.data?.status === "APPROVED" || data.data?.status === "DECLINED" || data.data?.status === "FILTERED" || data.data?.status === "ERROR") {
           setMessage((prevMessage) => `The order status is now final.\n\n${prevMessage}`);
@@ -65,7 +79,32 @@ const PaymentReturn = () => {
       }
     };
 
-    fetchOrderStatus();
+    const initiateFetch = async () => {
+      try {
+        const signature = await generateSignature();
+        if (signature) {
+          if (signature === paramsSignature) {
+            console.log("Signatures is verified");
+            fetchOrderStatus();
+          } else {
+            console.error("Signatures do not match");
+            setMessage("Signatures do not match");
+          }
+        }
+      } catch (error) {
+        if (error.response) {
+          // server responded with a status other than 2xx
+          console.error("Error response:", error.response.data);
+          setMessage(error.response.data.message);
+        } else {
+          // something else happened while setting up the request
+          console.error("Error:", error.message);
+          setMessage(`Error: ${error.message}`);
+        }
+      }
+    };
+
+    initiateFetch();
   }, [data?.data?.status]);
 
   return (

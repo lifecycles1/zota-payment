@@ -51,21 +51,13 @@ const TestFlows = () => {
       // order status request happens in redirectURL (PaymentReturn.jsx)
       // frontend will poll requests and display/update results until a final status is received.
       const merchantOrderID = response.data.data.merchantOrderID;
-      console.log("merchantOrderID:", merchantOrderID);
       const orderID = response.data.data.orderID;
-      console.log("orderID:", orderID);
       const timestamp = Math.floor(Date.now() / 1000);
       // generate auth signature for order status request
       const orderStatusSignature = GenerateSignature(`${merchantID}${merchantOrderID}${orderID}${timestamp}${merchantSecretKey}`);
       // prepare query paramaters for the order status request
-      localStorage.setItem("merchantID", merchantID);
-      localStorage.setItem("merchantOrderID", merchantOrderID);
-      localStorage.setItem("orderID", orderID);
       localStorage.setItem("timestamp", timestamp);
       localStorage.setItem("signature", orderStatusSignature);
-      // pass base url and order status request endpoint to the redirect url
-      localStorage.setItem("baseURL", baseURL);
-      localStorage.setItem("orderStatusReqEndpointURL", orderStatusReqEndpointURL);
       // redirect to zota deposit url to submit the payment (zota will then redirect to the redirectUrl)
       window.location.href = response.data.data.depositUrl;
     } catch (error) {

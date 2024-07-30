@@ -26,5 +26,8 @@ func SetupRoutes(depositController *controllers.DepositController, orderStatusCo
 	// frontend deposit flow (TEST Client Flow Button provided in frontend(TestFlows)) with redirects using frontend(PaymentReturn.jsx as redirectUrl) polling until final order status is received.
 	r.HandleFunc("/api/v1/deposit/client-flow/{endpointID}/", depositController.DepositRequestHandler).Methods("POST")
 
+	// callback notification route just validates the signature for now, logs the request and returns 200 OK
+	r.HandleFunc("/api/v1/payment-callback/", depositController.CallbackHandler).Methods("POST")
+
 	return r
 }

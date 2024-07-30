@@ -65,3 +65,22 @@ func (c *DepositController) DepositRequestHandler(w http.ResponseWriter, r *http
 		http.Error(w, "Error encoding response", http.StatusInternalServerError)
 	}
 }
+
+func (c *DepositController) CallbackHandler(w http.ResponseWriter, r *http.Request) {
+	var callbackRequest dto.CallbackNotification
+
+	if err := json.NewDecoder(r.Body).Decode(&callbackRequest); err != nil {
+		log.Printf("Error decoding request: %v", err)
+		http.Error(w, "Invalid request payload", http.StatusBadRequest)
+		return
+	}
+
+	err := c.depositService.HandleCallback(callbackRequest)
+	if err != nil {
+		log.Printf("Error handling callback: %v", err)
+		http.Error(w, "Error handling callback", http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+}

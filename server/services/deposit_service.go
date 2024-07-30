@@ -71,3 +71,21 @@ func (s *DepositService) CreateDepositRequest(endpointID string, request dto.Dep
 
 	return &depositResponse, nil
 }
+
+func (s *DepositService) HandleCallback(request dto.CallbackNotification) error {
+	log.Printf("Received callback request: %+v", request)
+
+	// validate the signature
+	signatureString := fmt.Sprintf("%s%s%s%s%s%s%s",
+		request.EndpointID, request.OrderID, request.MerchantOrderID, request.Status, request.Amount, request.CustomerEmail, s.MerchantSecretKey)
+	signature := utils.GenerateSignature(signatureString)
+
+	if signature != request.Signature {
+		log.Printf("Invalid signature")
+		return fmt.Errorf("unable to validate callback signature")
+	}
+
+	log.Printf("Callback signature is valid")
+
+	return nil
+}
