@@ -6,7 +6,11 @@ require github.com/gorilla/mux v1.8.1
 
 require github.com/rs/cors v1.11.0
 
-require github.com/joho/godotenv v1.5.1
+require (
+	github.com/confluentinc/confluent-kafka-go v1.9.2
+	github.com/joho/godotenv v1.5.1
+	github.com/lib/pq v1.10.9
+)
 
 require (
 	github.com/davecgh/go-spew v1.1.1 // indirect

@@ -7,18 +7,21 @@ import (
 	"log"
 	"net/http"
 	"zota_payment/dto"
+	"zota_payment/kafka"
 	"zota_payment/utils"
 )
 
 type DepositService struct {
 	BaseURL           string
 	MerchantSecretKey string
+	kafkaProducer     *kafka.Producer
 }
 
-func NewDepositService(baseURL, merchantSecretKey string) *DepositService {
+func NewDepositService(baseURL, merchantSecretKey string, kafkaProducer *kafka.Producer) *DepositService {
 	return &DepositService{
 		BaseURL:           baseURL,
 		MerchantSecretKey: merchantSecretKey,
+		kafkaProducer:     kafkaProducer,
 	}
 }
 
@@ -86,6 +89,21 @@ func (s *DepositService) HandleCallback(request dto.CallbackNotification) error 
 	}
 
 	log.Printf("Callback signature is valid")
+
+	// send the callback notification to the Kafka topic
+	message, err := json.Marshal(request)
+	if err != nil {
+		log.Printf("Error marshalling callback request: %v", err)
+		return fmt.Errorf("error marshalling callback request: %w", err)
+	}
+
+	err = s.kafkaProducer.SendMessage("callback_notifications", string(message))
+	if err != nil {
+		log.Printf("Error sending message to Kafka: %v", err)
+		return fmt.Errorf("error sending message to Kafka: %w", err)
+	}
+
+	log.Printf("Callback notification sent to Kafka")
 
 	return nil
 }
